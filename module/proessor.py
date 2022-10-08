@@ -6,6 +6,8 @@ from typing import Union, Text
 import numpy as np
 import pandas as pd
 
+from module.utils import clock
+
 
 EPS = 1e-12
 
@@ -126,6 +128,7 @@ class Processor:
         """
 
     @abc.abstractmethod
+    @clock
     def __call__(self, df: pd.DataFrame):
         """
         process the data
@@ -171,6 +174,7 @@ class DropnaProcessor(Processor):
     def __init__(self, fields_group=None):
         self.fields_group = fields_group
 
+    @clock
     def __call__(self, df):
         return df.dropna(subset=get_group_columns(df, self.fields_group))
 
@@ -183,6 +187,7 @@ class DropnaFeature(Processor):
         self.fields_group = fields_group
         self.max_na = max_na
 
+    @clock
     def __call__(self, df):
         slc = get_group_columns(df, self.fields_group)
         return df.dropna(subset=slc, 
@@ -205,6 +210,7 @@ class DropCol(Processor):
     def __init__(self, col_list=[]):
         self.col_list = col_list
 
+    @clock
     def __call__(self, df):
         if isinstance(df.columns, pd.MultiIndex):
             mask = df.columns.get_level_values(-1).isin(self.col_list)
@@ -221,6 +227,7 @@ class FilterCol(Processor):
         self.fields_group = fields_group
         self.col_list = col_list
 
+    @clock
     def __call__(self, df):
 
         cols = get_group_columns(df, self.fields_group)
@@ -237,6 +244,7 @@ class FilterCol(Processor):
 class TanhProcess(Processor):
     """Use tanh to process noise data"""
 
+    @clock
     def __call__(self, df):
         def tanh_denoise(data):
             mask = data.columns.get_level_values(1).str.contains("LABEL")
@@ -252,6 +260,7 @@ class TanhProcess(Processor):
 class ProcessInf(Processor):
     """Process infinity"""
 
+    @clock
     def __call__(self, df):
         def replace_inf(data):
             def process_inf(df):
@@ -274,6 +283,7 @@ class Fillna(Processor):
         self.fields_group = fields_group
         self.fill_value = fill_value
 
+    @clock
     def __call__(self, df):
         if self.fields_group is None:
             df.fillna(self.fill_value, inplace=True)
@@ -305,6 +315,7 @@ class MinMaxNorm(Processor):
         self.ignore = self.min_val == self.max_val
         self.cols = cols
 
+    @clock
     def __call__(self, df):
         def normalize(x, min_val=self.min_val, max_val=self.max_val, ignore=self.ignore):
             if (~ignore).all():
@@ -336,6 +347,7 @@ class ZScoreNorm(Processor):
         self.ignore = self.std_train == 0
         self.cols = cols
 
+    @clock
     def __call__(self, df):
         def normalize(x, mean_train=self.mean_train, std_train=self.std_train, ignore=self.ignore):
             if (~ignore).all():
@@ -375,6 +387,7 @@ class RobustZScoreNorm(Processor):
         self.std_train += EPS
         self.std_train *= 1.4826
 
+    @clock
     def __call__(self, df):
         X = df[self.cols]
         X -= self.mean_train
@@ -397,6 +410,7 @@ class CSZScoreNorm(Processor):
         else:
             raise NotImplementedError(f"This type of input is not supported")
 
+    @clock
     def __call__(self, df):
         # try not modify original dataframe
         if not isinstance(self.fields_group, list):
@@ -427,6 +441,7 @@ class CSRankNorm(Processor):
     def __init__(self, fields_group=None):
         self.fields_group = fields_group
 
+    @clock
     def __call__(self, df):
         # try not modify original dataframe
         cols = get_group_columns(df, self.fields_group)
@@ -443,6 +458,7 @@ class CSZFillna(Processor):
     def __init__(self, fields_group=None):
         self.fields_group = fields_group
 
+    @clock
     def __call__(self, df):
         cols = get_group_columns(df, self.fields_group)
         df[cols] = df[cols].groupby("datetime").apply(lambda x: x.fillna(x.mean()))
