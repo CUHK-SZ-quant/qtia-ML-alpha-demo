@@ -1,6 +1,7 @@
 import pandas as pd
 import numpy as np
 import argparse
+from module.backtest import BackTest
 
 from module.data import prepare_dataset
 from module.gbdt_model import GBDTModel
@@ -38,11 +39,15 @@ def main():
                              test_seg=slice(20210101, 20220915))
 
     pred = model.predict(dataset.get_data_split('test'))
-    pred.to_pickle('pred.pkl')
-    print(pred)
+    # pred.to_pickle('pred.pkl')
+    # print(pred)
     # back-testing
-    # results = alpha_back_test(pred)
-    # print(results)
+    # print('reading pred.pkl')
+    # pred = pd.read_pickle('pred.pkl')
+    print(f'Start backtesting ...')
+    backtester = BackTest(20210101, 20220915, args.data, [1, 2, 5, 10], 10)
+    results = backtester.alpha_backtest(pred, alpha_shifted=False, plot=True)
+    print(pd.DataFrame.from_dict(results))
 
 if __name__ == '__main__':
     main()
