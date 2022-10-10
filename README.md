@@ -23,3 +23,9 @@ In this demo, a GBDT on raw price and volume info is used to predict future pric
 ```bash
 python run_lgb.py --data <path-to-downloaded-daily-price-csv>
 ```
+
+## Backtest
+
+In this demo, transaction fee is not considered and trades are assumed to be settle on close price.
+
+![image](asset/1.png)
