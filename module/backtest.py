@@ -41,7 +41,7 @@ class BackTest:
     def alpha_backtest(self, alpha: pd.Series, alpha_shifted=True, 
             plot=False, save_dir: str = 'outputs') -> dict:
         if not alpha_shifted:
-            self.shift_date(alpha, 1)
+            alpha = self.shift_date(alpha, 1)
         results = {}
         for holding_period in self.holding_periods:
             stock_return = self.get_future_return(holding_period, normalize=True)
@@ -58,15 +58,17 @@ class BackTest:
         if self.data is None:
             self.setup_data()
         future_price = self.data.groupby('instrument').shift(-n_days_ahead)
-        future_return = future_price / self.data - 1
+        future_return = future_price / self.data
         future_return = future_return.dropna()
         if normalize:
-            future_return = future_return / n_days_ahead
+            future_return = future_return ** (1 / n_days_ahead)
+        future_return -= 1
         return future_return
 
     def group_test(self, alpha: pd.Series, future_return: pd.Series, plot: bool, save_path: str):
         df = pd.concat([alpha, future_return], axis=1, join='inner')
         df.columns = ['alpha', 'return']
+        df = df.dropna()
         df['group'] = df.groupby('datetime')['alpha'].rank(pct=True
             ).map(lambda x: int(self.n_groups * x) if x != 1 else self.n_groups-1)
         top_avg_return = df[df['group'] == self.n_groups-1].groupby('datetime')['return'].mean()
